@@ -1,4 +1,5 @@
 import sys, math
+import numpy as np
 
 global DIM, K, ITER, points, EPSILON
 DIM = None
@@ -7,61 +8,37 @@ ITER = 400
 points = []
 EPSILON = 0.001
 
-class Point:
-    def __init__(self, coordinates):
-        self.coords = tuple(coordinates)
-        self.d = len(self.coords)
-        self.closestCenter = None
+def kmeans_pp_init(data_points, data_indices, k):
+    np.random.seed(1234)
 
-    def updateClosestCenter(self, CenterPoints):
-        for center in CenterPoints:
-            dist = self.distanceTo(center)
-            if self.closestCenter is None or dist < self.distanceTo(self.closestCenter):
-                self.closestCenter = center
+    keys = np.array(data_indices)
 
-    def distanceTo(self, otherPoint):
-        if self.d != otherPoint.d:
-            raise ValueError("Points must have the same dimension to calculate distance.")
-        return math.sqrt(sum((a - b) ** 2 for a, b in zip(self.coords, otherPoint.coords)))
+    N, D = data_points.shape
+    chosen_indices = []
 
-class CenterPoint:
-    def __init__(self, coordinates):
-        self.coords = tuple(coordinates)
-        self.d = len(self.coords)
-        self.assignedPoints = []
+    first_index = np.random.choice(N)
+    chosen_indices.append(first_index)
 
-    def updateCoordinates(self):
-        sum_squared = 0
-        if not self.assignedPoints:
-            return
-        new_coords = []
-        for i in range(self.d):
-            coord_sum = sum(point.coords[i] for point in self.assignedPoints)
-            new_coords.append(round(coord_sum / len(self.assignedPoints), 4))
-            squared_diff = (new_coords[-1] - self.coords[i]) ** 2
-            sum_squared += squared_diff
-        if len(new_coords) != self.d:
-            raise ValueError("Dimension mismatch when updating coordinates.")
-        self.coords = tuple(new_coords)
-        self.assignedPoints = []
-        movement_distance = math.sqrt(sum_squared)
-        return movement_distance > EPSILON
+    for _ in range(k-1):
+        current_centers = data_points[chosen_indices]
+
+        dists = np_euclidean_distance(data_points[:, np.newaxis, :], current_centers[np.newaxis, :, :])
+        min_dists = np.min(dists, axis=1)
+        sum_dists = np.sum(min_dists)
+        if sum_dists == 0:
+            probs = np.ones(N) / N
+        else:
+            probs = min_dists / sum_dists
+        next_index = np.random.choice(N, p=probs)
+        chosen_indices.append(next_index)
+
+    return data_points[chosen_indices], keys[chosen_indices]
+         
+
+def np_euclidean_distance(a, b):
+            return np.sqrt(np.sum((a - b) ** 2, axis=2))
     
-def updateAllPoints(points, centerPoints):
-    for point in points:
-        try:
-            point.updateClosestCenter(centerPoints)
-        except Exception as e:
-            print(f"Error updating closest center for a point: {e}")
-            continue
-        point.closestCenter.assignedPoints.append(point)
 
-def updateAllCenters(centerPoints):
-    stopRun = True
-    for center in centerPoints:
-        if center.updateCoordinates():
-            stopRun = False
-    return stopRun
 
 def kmeans(points, k, max_iterations=ITER):
     centerPoints = [CenterPoint(point.coords) for point in points[:k]]
@@ -109,13 +86,12 @@ def main():
             sys.exit(1)
 
     #parse and dreate points
-    parse(sys.stdin)
+    
     if(K >= len(points)):
         print("Incorrect number of clusters!")
         sys.exit(1)
 
-    if points:
-        final_centers = kmeans(points, K)
+    #kmeans logic in c
         
         for center in final_centers:
             formatted_coords = (f"{c:.4f}" for c in center.coords)
