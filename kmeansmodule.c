@@ -1,6 +1,9 @@
+#define PY_SSIZE_T_CLEAN
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <Python.h>
 
 static struct vector *global_vec_ptr = NULL;
 static struct center *global_cent_ptr = NULL;
@@ -40,6 +43,45 @@ void delete_point_from_its_center(struct center*, struct vector*);
 int update_all_centers(struct center*, struct vector*);
 void print_centers(struct center*);
 int main(int, char**);
+
+
+static PyObject* kmeans(PyObject *self, PyObject *args)
+{
+    /*gets K, iter, eps, list of datapoints and list of centroides*/
+    int K;
+    int iter;
+    double eps;
+    /* something to get the datapoints and the centroides*/
+    /*change the following line to parse the types*/
+    if(!PyArg_ParseTuple(args, "iidOO", &K, &iter, &eps)) {
+        return NULL; /* In the CPython API, a NULL value is never valid for a
+                        PyObject* so it is used to signal that an error has occurred. */
+    }
+/* change to return a list of centers - different typr, different value*/
+/* This builds the answer ("d" = Convert a C double to a Python floating point number) back into a python object */
+    return Py_BuildValue("d", geo_c(z, n)); /*  Py_BuildValue(...) returns a PyObject*  */
+}
+
+static PyMethodDef kmeansMethods[] = {
+    {"kmeans",                   /* the Python method name that will be used */
+      (PyCFunction) kmeans, /* the C-function that implements the Python function and returns static PyObject*  */
+      METH_VARARGS,           /* flags indicating parameters
+accepted for this function */
+/*probably need to change that one - i get more arguments */
+      PyDoc_STR("calculates centroides from a list of datapoints and a list of init_centroides using kmeans")}, 
+      /*  The docstring for the function */
+    {NULL, NULL, 0, NULL}     /* The last entry must be all NULL as shown to act as a
+                                 sentinel. Python looks for this entry to know that all
+                                 of the functions for the module have been defined. */
+};
+
+static struct PyModuleDef kmeansmodule = {
+    PyModuleDef_HEAD_INIT,
+    "kmeans_capi", /* name of module */
+    NULL, /* module documentation, may be NULL */
+    -1,  /* size of per-interpreter state of the module, or -1 if the module keeps state in global variables. */
+    kmeansMethods /* the PyMethodDef array from before containing the methods of the extension */
+};
 
 void delete_point(struct cord *curr)
 {
