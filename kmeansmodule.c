@@ -8,6 +8,8 @@
 static struct vector *global_vec_ptr = NULL;
 static struct center *global_cent_ptr = NULL;
 
+
+
 struct cord
 {
     double value;
@@ -45,26 +47,25 @@ void print_centers(struct center*);
 int main(int, char**);
 
 
-static PyObject* kmeans(PyObject *self, PyObject *args)
+static PyObject* fit(PyObject *self, PyObject *args)
 {
-    /*gets K, iter, eps, list of datapoints and list of centroides*/
-    int K;
+    /*gets iter, eps, list of datapoints and list of centroides*/
     int iter;
     double eps;
     /* something to get the datapoints and the centroides*/
     /*change the following line to parse the types*/
-    if(!PyArg_ParseTuple(args, "iidOO", &K, &iter, &eps)) {
+    if(!PyArg_ParseTuple(args, "idOO", &iter, &eps)) {
         return NULL; /* In the CPython API, a NULL value is never valid for a
                         PyObject* so it is used to signal that an error has occurred. */
     }
 /* change to return a list of centers - different typr, different value*/
 /* This builds the answer ("d" = Convert a C double to a Python floating point number) back into a python object */
-    return Py_BuildValue("d", geo_c(z, n)); /*  Py_BuildValue(...) returns a PyObject*  */
+    return Py_BuildValue("d", fit_c(z, n)); /*  Py_BuildValue(...) returns a PyObject*  */
 }
 
 static PyMethodDef kmeansMethods[] = {
-    {"kmeans",                   /* the Python method name that will be used */
-      (PyCFunction) kmeans, /* the C-function that implements the Python function and returns static PyObject*  */
+    {"fit",                   /* the Python method name that will be used */
+      (PyCFunction) fit, /* the C-function that implements the Python function and returns static PyObject*  */
       METH_VARARGS,           /* flags indicating parameters
 accepted for this function */
 /*probably need to change that one - i get more arguments */
@@ -75,13 +76,42 @@ accepted for this function */
                                  of the functions for the module have been defined. */
 };
 
-static struct PyModuleDef kmeansmodule = {
+static struct PyModuleDef mykmeanssp = {
     PyModuleDef_HEAD_INIT,
-    "kmeans_capi", /* name of module */
+    "mykmeanssp", /* name of module */
     NULL, /* module documentation, may be NULL */
     -1,  /* size of per-interpreter state of the module, or -1 if the module keeps state in global variables. */
     kmeansMethods /* the PyMethodDef array from before containing the methods of the extension */
 };
+
+
+fit_c(int iter, double eps, struct vector head_vec, struct center centers) /*change so that it gets python objects for the lists*/
+{
+    int count, changed;
+    struct vector head_vec;
+    struct center centers;
+ /*assighn head_vec and centers from the python objects, with the functions*/
+    
+    /* Store global pointers for cleanup if needed: */
+    global_vec_ptr = head_vec;
+    global_cent_ptr = centers;
+
+    
+    count = 0;
+    changed = 1;
+
+    while (changed && (count < iter))
+    {
+        update_all_points(head_vec, centers);
+        changed = update_all_centers(centers, head_vec);
+        count++;
+    }
+
+    print_centers(centers); /*change to create python object representing centers*/
+    delete_points_list(head_vec);
+    delete_centers_list(centers);
+    return 0; /*change with return the centers python object*/
+}
 
 void delete_point(struct cord *curr)
 {
@@ -209,6 +239,8 @@ struct center *closest_center(struct vector *vec, struct center *centers)
     return closest;
 }
 
+
+/* probably can delete this function?*/
 struct center* init_centers(struct vector *vectors, int K)
 {
     struct center *head_center = NULL;
@@ -270,7 +302,7 @@ void delete_point_from_its_center(struct center *centers, struct vector *point)
     }
 }
 
-int update_all_centers(struct center *centers, struct vector *first_point)
+int update_all_centers(struct center *centers, struct vector *first_point, double eps)
 {
     int moved = 0;
     double eps = 0.001;
@@ -334,6 +366,9 @@ void print_centers(struct center *centers)
         curr_center = curr_center->next;
     }
 }
+
+
+/*probably can delete this */
 
 int main(int argc, char **argv)
 {
