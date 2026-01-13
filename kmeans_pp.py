@@ -1,4 +1,4 @@
-import sys, math, pandas as pd, numpy as np
+import sys, math, pandas as pd, numpy as np, kmeans_capi as c_kmeans
 
 global K, iters, points, eps
 K = None
@@ -103,6 +103,10 @@ def main():
 
     centers, center_indices = kmeans_pp_init(matrix, indices, K)
     print(center_indices)
+
+    #havent run that to check if works. is the c capable of parsing numpy objects?
+    updated_centers = c_kmeans.fit(iters, K, eps, matrix, centers)
+    print(updated_centers)
 
     #kmeans logic in c
         
