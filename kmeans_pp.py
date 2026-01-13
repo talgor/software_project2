@@ -76,6 +76,11 @@ def main():
         print("Incorrect number of clusters!")
         sys.exit(1)
 
+    try:
+        eps = float(eps)
+    except Exception:
+        print("Incorrect epsilon!")
+        sys.exit(1)
     if eps < 0:
         print("Incorrect epsilon!")
         sys.exit(1)
