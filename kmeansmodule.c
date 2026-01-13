@@ -31,9 +31,9 @@ struct center
 
 static PyObject* fit(PyObject*, PyObject*);
 struct center *fit_c(int, double, struct vector*, struct center*);
-static PyObject* build_py_centers(struct center*, int)
+static PyObject* build_py_centers(struct center*, int);
 struct cord* create_cord_list_from_py(PyObject *);
-struct cord* create_zero_cord_list(int);
+struct cord* create_zero_cord_list();
 struct vector* py_list_to_vector(PyObject *);
 struct center* py_list_to_center(PyObject *);
 static PyObject* fit(PyObject *, PyObject *);
