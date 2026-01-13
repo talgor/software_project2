@@ -7,8 +7,7 @@
 
 static struct vector *global_vec_ptr = NULL;
 static struct center *global_cent_ptr = NULL;
-
-
+static int DIM = 0;
 
 struct cord
 {
@@ -30,6 +29,12 @@ struct center
     int num_assigned;
 };
 
+struct cord* create_cord_list_from_py(PyObject *);
+struct cord* create_zero_cord_list(int);
+struct vector* py_list_to_vector(PyObject *);
+struct center* py_list_to_center(PyObject *);
+static PyObject* fit(PyObject *, PyObject *);
+int kmeans(int, double, struct vector*, struct center*);
 void delete_point(struct cord*);
 void delete_points_list(struct vector*);
 void delete_centers_list(struct center*);
@@ -38,14 +43,34 @@ struct cord* create_cord_node(double, struct center*);
 struct center *create_center(struct vector*);
 double points_distance(struct cord*, struct cord*);
 struct center *closest_center(struct vector*, struct center*);
-struct center* init_centers(struct vector*, int);
 void assign_vector_to_center(struct vector*, struct center*);
 void update_all_points(struct vector*, struct center*);
 void delete_point_from_its_center(struct center*, struct vector*);
 int update_all_centers(struct center*, struct vector*);
-void print_centers(struct center*);
-int main(int, char**);
 
+struct cord* create_cord_list_from_py(PyObject *py_list) {
+    struct cord *head = NULL, *curr = NULL;
+    
+    for (Py_ssize_t i = 0; i < DIM; i++) {
+        double val = PyFloat_AsDouble(PyList_GetItem(py_list, i));
+        struct cord *new_cord = malloc(sizeof(struct cord));
+        if (new_cord == NULL) {
+            printf("An Error Has Occurred\n");
+            free_all();
+            exit(1);   
+        }
+        new_cord->value = val;
+        new_cord->next = NULL;
+      if (head == NULL) {
+            head = new_cord;
+            curr = head;
+        } else {
+            curr->next = new_cord;
+            curr = new_cord;
+        }
+    }
+    return head;
+}
 
 static PyObject* fit(PyObject *self, PyObject *args)
 {
@@ -65,13 +90,160 @@ static PyObject* fit(PyObject *self, PyObject *args)
     }
 /* change to return a list of centers - different typr, different value*/
 /* This builds the answer ("d" = Convert a C double to a Python floating point number) back into a python object */
-    head_vec = /*build the c object*/
-    centers = /*build the c object */
+    head_vec = py_list_to_vector(datapoints);
+    centers = py_list_to_center(initial_centers);
     updated_centers = fit_c(iter, eps, head_vec, centers);
     final_centers = build_py_centers(updated_centers, K, cords);
     delete_points_list(head_vec);
     delete_centers_list(centers);
     return final_centers;
+}
+
+struct cord* create_zero_cord_list() {
+    struct cord *head = NULL, *curr = NULL;
+
+    for (int i = 0; i < DIM; i++) {
+        struct cord *new_cord = malloc(sizeof(struct cord));
+        if (new_cord == NULL) {
+            printf("An Error Has Occurred\n");
+            free_all();
+            exit(1);   
+        }
+        new_cord->value = 0.0;
+        new_cord->next = NULL;
+
+        if (head == NULL) {
+            head = new_cord;
+            curr = head;
+        } else {
+            curr->next = new_cord;
+            curr = new_cord;
+        }
+    }
+    return head;
+}
+
+struct vector* py_list_to_vector(PyObject *py_list) {
+    struct vector *head = NULL, *curr = NULL;
+    Py_ssize_t n = PyList_Size(py_list);
+    for (Py_ssize_t i = 0; i < n; i++) {
+        PyObject *py_point = PyList_GetItem(py_list, i);
+        struct vector *new_vec = malloc(sizeof(struct vector));
+        if (new_vec == NULL) {
+            printf("An Error Has Occurred\n");
+            free_all();
+            exit(1);
+        }
+        new_vec->cords = create_cord_list_from_py(py_point);
+        new_vec->next = NULL;
+
+        if (head == NULL) {
+            head = new_vec;
+            curr = head;
+        } else {
+            curr->next = new_vec;
+            curr = new_vec;
+        }
+
+        return head;
+}
+
+struct center* py_list_to_center(PyObject *py_list) {
+    struct center *head = NULL, *curr = NULL;
+    Py_ssize_t k = PyList_Size(py_list);
+
+    PyObject *first_point = PyList_GetItem(py_list, 0);
+    int dim = (int)PyList_Size(first_point);
+
+    for (Py_ssize_t i = 0; i < k; i++) {
+        PyObject *py_center = PyList_GetItem(py_list, i);
+        struct center *new_center = malloc(sizeof(struct center));
+        if (new_center == NULL) {
+            printf("An Error Has Occurred\n");
+            free_all();
+            exit(1);
+        }
+        new_center->cords = create_cord_list_from_py(py_center);
+        new_center->sum_assigned = create_zero_cord_list(dim);;
+        new_center->num_assigned = 0;
+        new_center->next = NULL;
+
+        if (head == NULL) {
+            head = new_center;
+            curr = head;
+        } else {
+            curr->next = new_center;
+            curr = new_center;
+        }
+    }
+    return head;
+}
+
+static PyObject* fit(PyObject *self, PyObject *args) {
+    /*gets iter, eps, list of datapoints and list of centroides*/
+    int iter;
+    double eps;
+    PyObject *py_points_list;
+    PyObject *py_centers_list;
+
+    if(!PyArg_ParseTuple(args, "idOO", &iter, &eps, &py_points_list, &py_centers_list)) {
+        return NULL; /* Error in parsing arguments */
+    }
+
+    DIM = (int)PyList_Size(PyList_GetItem(py_points_list, 0));
+
+    struct vector *c_points = py_list_to_vector(py_points_list);
+    struct center *c_centers = py_list_to_center(py_centers_list);
+
+    kmeans(iter, eps, c_points, c_centers);
+
+    /* Convert Result back C -> Python */
+
+    /* Clean up C memory before returning to Python */
+     
+    return Py_BuildValue("d", kmeans(z, n)); /*  Py_BuildValue(...) returns a PyObject*  */
+}
+
+static PyMethodDef kmeansMethods[] = {
+    {"fit",                 /* the Python method name that will be used */
+      (PyCFunction) fit,    /* the C-function that implements the Python function and returns static PyObject*  */
+      METH_VARARGS,         /* flags indicating parameters accepted for this function */
+    /*probably need to change that one - i get more arguments */
+
+      PyDoc_STR("calculates centroides from a list of datapoints and a list of init_centroides using kmeans")}, 
+      /*  The docstring for the function */
+    {NULL, NULL, 0, NULL}     /* The last entry must be all NULL as shown to act as a
+                                 sentinel. Python looks for this entry to know that all
+                                 of the functions for the module have been defined. */
+};
+
+static struct PyModuleDef mykmeanssp = {
+    PyModuleDef_HEAD_INIT,
+    "mykmeanssp",       /* name of module */
+    NULL,               /* module documentation, may be NULL */
+    -1,                 /* size of per-interpreter state of the module, or -1 if the module keeps state in global variables. */
+    kmeansMethods       /* the PyMethodDef array from before containing the methods of the extension */
+};
+
+
+void kmeans(int iter, double eps, struct vector head_vec, struct center centers) /*change so that it gets python objects for the lists*/
+{
+    int count, changed;
+    struct vector head_vec;
+    struct center centers;
+    
+    global_vec_ptr = head_vec;
+    global_cent_ptr = centers;
+
+    count = 0;
+    changed = 1;
+
+    while (changed && (count < iter))
+    {
+        update_all_points(head_vec, centers);
+        changed = update_all_centers(centers, head_vec);
+        count++;
+    }
 }
 
 static PyMethodDef kmeansMethods[] = {
@@ -266,7 +438,6 @@ struct center *closest_center(struct vector *vec, struct center *centers)
     }
     return closest;
 }
-
 
 void assign_vector_to_center(struct vector *vec, struct center *center)
 {
