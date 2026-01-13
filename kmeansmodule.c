@@ -7,6 +7,7 @@
 
 static struct vector *global_vec_ptr = NULL;
 static struct center *global_cent_ptr = NULL;
+static int DIM = 0;
 
 struct cord
 {
@@ -33,7 +34,7 @@ struct cord* create_zero_cord_list(int);
 struct vector* py_list_to_vector(PyObject *);
 struct center* py_list_to_center(PyObject *);
 static PyObject* fit(PyObject *, PyObject *);
-int fit_c(int, double, struct vector*, struct center*);
+int kmeans(int, double, struct vector*, struct center*);
 void delete_point(struct cord*);
 void delete_points_list(struct vector*);
 void delete_centers_list(struct center*);
@@ -49,9 +50,8 @@ int update_all_centers(struct center*, struct vector*);
 
 struct cord* create_cord_list_from_py(PyObject *py_list) {
     struct cord *head = NULL, *curr = NULL;
-    Py_ssize_t n = PyList_Size(py_list);
     
-    for (Py_ssize_t i = 0; i < n; i++) {
+    for (Py_ssize_t i = 0; i < DIM; i++) {
         double val = PyFloat_AsDouble(PyList_GetItem(py_list, i));
         struct cord *new_cord = malloc(sizeof(struct cord));
         if (new_cord == NULL) {
@@ -73,9 +73,10 @@ struct cord* create_cord_list_from_py(PyObject *py_list) {
     return head;
 }
 
-struct cord* create_zero_cord_list(int dim) {
+struct cord* create_zero_cord_list() {
     struct cord *head = NULL, *curr = NULL;
-    for (int i = 0; i < dim; i++) {
+
+    for (int i = 0; i < DIM; i++) {
         struct cord *new_cord = malloc(sizeof(struct cord));
         if (new_cord == NULL) {
             printf("An Error Has Occurred\n");
@@ -163,12 +164,18 @@ static PyObject* fit(PyObject *self, PyObject *args) {
         return NULL; /* Error in parsing arguments */
     }
 
+    DIM = (int)PyList_Size(PyList_GetItem(py_points_list, 0));
+
     struct vector *c_points = py_list_to_vector(py_points_list);
     struct center *c_centers = py_list_to_center(py_centers_list);
 
-    /* change to return a list of centers - different typr, different value*/
-    /* This builds the answer ("d" = Convert a C double to a Python floating point number) back into a python object */
-    return Py_BuildValue("d", fit_c(z, n)); /*  Py_BuildValue(...) returns a PyObject*  */
+    kmeans(iter, eps, c_points, c_centers);
+
+    /* Convert Result back C -> Python */
+
+    /* Clean up C memory before returning to Python */
+     
+    return Py_BuildValue("d", kmeans(z, n)); /*  Py_BuildValue(...) returns a PyObject*  */
 }
 
 static PyMethodDef kmeansMethods[] = {
@@ -193,14 +200,12 @@ static struct PyModuleDef mykmeanssp = {
 };
 
 
-fit_c(int iter, double eps, struct vector head_vec, struct center centers) /*change so that it gets python objects for the lists*/
+void kmeans(int iter, double eps, struct vector head_vec, struct center centers) /*change so that it gets python objects for the lists*/
 {
     int count, changed;
     struct vector head_vec;
     struct center centers;
-    /*assign head_vec and centers from the python objects, with the functions*/
     
-    /* Store global pointers for cleanup if needed: */
     global_vec_ptr = head_vec;
     global_cent_ptr = centers;
 
@@ -213,29 +218,6 @@ fit_c(int iter, double eps, struct vector head_vec, struct center centers) /*cha
         changed = update_all_centers(centers, head_vec);
         count++;
     }
-
-    print_centers(centers); /*change to create python object representing centers*/
-    delete_points_list(head_vec);
-    delete_centers_list(centers);
-    return 0;   /*change with return the centers python object*/
-}
-
-
-static PyObject* kmeans(PyObject *self, PyObject *args)
-{
-    /*gets K, iter, eps, list of datapoints and list of centroides*/
-    int K;
-    int iter;
-    double eps;
-    /* something to get the datapoints and the centroides*/
-    /*change the following line to parse the types*/
-    if(!PyArg_ParseTuple(args, "iidOO", &K, &iter, &eps)) {
-        return NULL; /* In the CPython API, a NULL value is never valid for a
-                        PyObject* so it is used to signal that an error has occurred. */
-    }
-/* change to return a list of centers - different typr, different value*/
-/* This builds the answer ("d" = Convert a C double to a Python floating point number) back into a python object */
-    return Py_BuildValue("d", geo_c(z, n)); /*  Py_BuildValue(...) returns a PyObject*  */
 }
 
 static PyMethodDef kmeansMethods[] = {
