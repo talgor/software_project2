@@ -50,7 +50,7 @@ int main(int, char**);
 static PyObject* fit(PyObject *self, PyObject *args)
 {
     /*gets iter, eps, list of datapoints and list of centroides*/
-    int iter, K, cords;
+    int iter, K;
     double eps;
     struct vector *head_vec;
     struct center *centers;
@@ -65,9 +65,8 @@ static PyObject* fit(PyObject *self, PyObject *args)
     }
 /* change to return a list of centers - different typr, different value*/
 /* This builds the answer ("d" = Convert a C double to a Python floating point number) back into a python object */
-    head_vec = \*build the c object*\
-    centers = \*build the c object *\
-    cords = \**\
+    head_vec = /*build the c object*/
+    centers = /*build the c object */
     updated_centers = fit_c(iter, eps, head_vec, centers);
     final_centers = build_py_centers(updated_centers, K, cords);
     delete_points_list(head_vec);
@@ -104,17 +103,17 @@ static PyObject* build_py_centers(struct center *c_centers, int K)
     struct cord *curr_cord;
     int i, j;
     p_centers = PyList_New(K);
-    for (i = 0, i < N, ++i)
+    for (i = 0, i < K, ++i)
     {
         curr_center = PyList_New(DIM);
         curr_cord = c_centers->cords;
         for (j = 0, j < DIM, ++j)
         {
-            python_double = Py_BuildValue("d", cord->value);
-            PyList_SetItem(curr_center, j, python_double)
+            python_double = Py_BuildValue("d", curr_cord->value);
+            PyList_SetItem(curr_center, j, python_double);
             curr_cord = curr_cord->next;
         }
-        PyList_SetItem(p_centers, i, curr_center)
+        PyList_SetItem(p_centers, i, curr_center);
         c_centers = c_centers->next;
     }
     return p_centers;
@@ -134,8 +133,8 @@ struct center *fit_c(int iter, double eps, struct vector *head_vec, struct cente
 
     while (changed && (count < iter))
     {
-        update_all_points(head_vec, centers, eps);
-        changed = update_all_centers(centers, head_vec);
+        update_all_points(head_vec, centers);
+        changed = update_all_centers(centers, head_vec, eps);
         count++;
     }
 
