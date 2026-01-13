@@ -50,17 +50,29 @@ int main(int, char**);
 static PyObject* fit(PyObject *self, PyObject *args)
 {
     /*gets iter, eps, list of datapoints and list of centroides*/
-    int iter;
+    int iter, K, cords;
     double eps;
+    struct vector *head_vec;
+    struct center *centers;
+    PyObject *datapoints;
+    PyObject *initial_centers;
+    PyObject *final_centers;
     /* something to get the datapoints and the centroides*/
     /*change the following line to parse the types*/
-    if(!PyArg_ParseTuple(args, "idOO", &iter, &eps)) {
+    if(!PyArg_ParseTuple(args, "iidOO", &iter, &K, &eps, &datapoints, &initial_centers)) {
         return NULL; /* In the CPython API, a NULL value is never valid for a
                         PyObject* so it is used to signal that an error has occurred. */
     }
 /* change to return a list of centers - different typr, different value*/
 /* This builds the answer ("d" = Convert a C double to a Python floating point number) back into a python object */
-    return Py_BuildValue("d", fit_c(z, n)); /*  Py_BuildValue(...) returns a PyObject*  */
+    head_vec = \*build the c object*\
+    centers = \*build the c object *\
+    cords = \**\
+    updated_centers = fit_c(iter, eps, head_vec, centers);
+    final_centers = build_py_centers(updated_centers, K, cords);
+    delete_points_list(head_vec);
+    delete_centers_list(centers);
+    return final_centers;
 }
 
 static PyMethodDef kmeansMethods[] = {
@@ -84,19 +96,39 @@ static struct PyModuleDef mykmeanssp = {
     kmeansMethods /* the PyMethodDef array from before containing the methods of the extension */
 };
 
+static PyObject* build_py_centers(struct center *c_centers, int K)
+{
+    PyObject *p_centers;
+    PyObject *curr_center;
+    PyObject *python_double;
+    struct cord *curr_cord;
+    int i, j;
+    p_centers = PyList_New(K);
+    for (i = 0, i < N, ++i)
+    {
+        curr_center = PyList_New(DIM);
+        curr_cord = c_centers->cords;
+        for (j = 0, j < DIM, ++j)
+        {
+            python_double = Py_BuildValue("d", cord->value);
+            PyList_SetItem(curr_center, j, python_double)
+            curr_cord = curr_cord->next;
+        }
+        PyList_SetItem(p_centers, i, curr_center)
+        c_centers = c_centers->next;
+    }
+    return p_centers;
+}
 
-fit_c(int iter, double eps, struct vector head_vec, struct center centers) /*change so that it gets python objects for the lists*/
+
+struct center *fit_c(int iter, double eps, struct vector *head_vec, struct center *centers)
 {
     int count, changed;
-    struct vector head_vec;
-    struct center centers;
-    /*assighn head_vec and centers from the python objects, with the functions*/
-    
+
     /* Store global pointers for cleanup if needed: */
     global_vec_ptr = head_vec;
     global_cent_ptr = centers;
 
-    
     count = 0;
     changed = 1;
 
@@ -107,10 +139,7 @@ fit_c(int iter, double eps, struct vector head_vec, struct center centers) /*cha
         count++;
     }
 
-    print_centers(centers); /*change to create python object representing centers*/
-    delete_points_list(head_vec);
-    delete_centers_list(centers);
-    return 0; /*change with return the centers python object*/
+    return centers;
 }
 
 void delete_point(struct cord *curr)
