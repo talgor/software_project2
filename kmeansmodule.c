@@ -90,7 +90,7 @@ fit_c(int iter, double eps, struct vector head_vec, struct center centers) /*cha
     int count, changed;
     struct vector head_vec;
     struct center centers;
- /*assighn head_vec and centers from the python objects, with the functions*/
+    /*assighn head_vec and centers from the python objects, with the functions*/
     
     /* Store global pointers for cleanup if needed: */
     global_vec_ptr = head_vec;
@@ -102,7 +102,7 @@ fit_c(int iter, double eps, struct vector head_vec, struct center centers) /*cha
 
     while (changed && (count < iter))
     {
-        update_all_points(head_vec, centers);
+        update_all_points(head_vec, centers, eps);
         changed = update_all_centers(centers, head_vec);
         count++;
     }
@@ -240,28 +240,6 @@ struct center *closest_center(struct vector *vec, struct center *centers)
 }
 
 
-/* probably can delete this function?*/
-struct center* init_centers(struct vector *vectors, int K)
-{
-    struct center *head_center = NULL;
-    struct center *last_center = NULL;
-    struct vector *curr_vec = vectors;
-    struct center *new_center;
-    int i;
-    for(i=0; i<K && curr_vec != NULL; i++) {
-        new_center = create_center(curr_vec);
-        if(head_center == NULL) {
-            head_center = new_center;
-            global_cent_ptr = head_center; /* Store global pointer for cleanup if needed */
-        } else {
-            last_center->next = new_center;
-        }
-        last_center = new_center;
-        curr_vec = curr_vec->next;
-    }
-    return head_center;
-}
-
 void assign_vector_to_center(struct vector *vec, struct center *center)
 {
     struct cord *vec_cord = vec->cords;
@@ -305,7 +283,6 @@ void delete_point_from_its_center(struct center *centers, struct vector *point)
 int update_all_centers(struct center *centers, struct vector *first_point, double eps)
 {
     int moved = 0;
-    double eps = 0.001;
     struct center *curr_cent = centers;
     struct cord *tmp;
 
@@ -346,163 +323,4 @@ int update_all_centers(struct center *centers, struct vector *first_point, doubl
         curr_cent = curr_cent->next;
     }
     return moved;
-}
-
-void print_centers(struct center *centers)
-{
-    struct center *curr_center = centers;
-    struct cord *curr_cord;
-
-    while (curr_center != NULL) {
-        curr_cord = curr_center->cords;
-        while (curr_cord != NULL) {
-            printf("%.4f", curr_cord->value);
-            if (curr_cord->next != NULL) {
-                printf(",");
-            }
-            curr_cord = curr_cord->next;
-        }
-        printf("\n");
-        curr_center = curr_center->next;
-    }
-}
-
-
-/*probably can delete this */
-
-int main(int argc, char **argv)
-{
-    struct vector *head_vec, *curr_vec;
-    struct cord *head_cord, *curr_cord;
-    struct center *centers;
-    int rows = 0, K, iter, count, changed, i;
-    double n;
-    char c;
-
-    if (argc < 2 || argc > 3) {
-        printf("An Error Has Occurred\n");
-        exit(1);
-    }
-
-    for (i = 0; argv[1][i] != '\0'; i++) {
-        if (argv[1][i] < '0' || argv[1][i] > '9') {
-            printf("Incorrect number of clusters!\n");
-            exit(1);
-        }
-    }
-
-    K = atoi(argv[1]);
-
-    if (argc > 2) {
-
-        for (i = 0; argv[2][i] != '\0'; i++) {
-            if (argv[2][i] < '0' || argv[2][i] > '9') {
-               printf("Incorrect maximum iteration!\n");
-                exit(1);
-            }
-        }
-
-        iter = atoi(argv[2]);
-
-        if ((iter < 2) || (iter > 799)) {
-            printf("Incorrect maximum iteration!\n");
-            exit(1);
-        }
-    }
-
-    else {
-        iter = 400;
-    }
-
-    head_cord = malloc(sizeof(struct cord));
-    if(head_cord == NULL) {
-        printf("An Error Has Occurred\n");
-        exit(1);
-    }
-    curr_cord = head_cord;
-    curr_cord->next = NULL;
-
-    head_vec = malloc(sizeof(struct vector));
-    if(head_vec == NULL) {
-        printf("An Error Has Occurred\n");
-        free(head_cord);
-        exit(1);
-    }
-    global_vec_ptr = head_vec; /* Store global pointer for cleanup if needed */
-    curr_vec = head_vec;
-    curr_vec->next = NULL;
-
-
-    while (scanf("%lf%c", &n, &c) == 2)
-    {
-        if (c == '\n')
-        {
-            curr_cord->value = n;
-            curr_vec->cords = head_cord;
-            curr_vec->next = malloc(sizeof(struct vector));
-            if(curr_vec->next == NULL) {
-                printf("An Error Has Occurred\n");
-                free_all();
-                exit(1);
-            }
-            curr_vec = curr_vec->next;
-            curr_vec->next = NULL;
-            curr_vec->cords = NULL;
-            head_cord = malloc(sizeof(struct cord));
-            if(head_cord == NULL) {
-                printf("An Error Has Occurred\n");
-                free_all();
-                exit(1);
-            }
-            curr_cord = head_cord;
-            curr_cord->next = NULL;
-            rows++;
-            continue;
-        }
-
-        curr_cord->value = n;
-        curr_cord->next = malloc(sizeof(struct cord));
-        if(curr_cord->next == NULL) {
-            printf("An Error Has Occurred\n");
-            delete_point(head_cord);
-            free_all();
-            exit(1);
-        }
-        curr_cord = curr_cord->next;
-        curr_cord->next = NULL;
-    }
-
-    if ((K<=1) || (K>=rows)) {
-        printf("Incorrect number of clusters!");
-        free_all();
-        exit(1);
-    } 
-
-    if(head_cord!=NULL) {
-        free(head_cord);
-        head_cord = NULL;
-    }
-
-    if (rows == 0) {
-        printf("An Error Has Occurred\n");
-        free_all();
-        exit(1);
-    }
-
-    centers = init_centers(head_vec, K);
-
-    count = 0;
-    changed = 1;
-
-    while (changed && (count < iter))
-    {
-        update_all_points(head_vec, centers);
-        changed = update_all_centers(centers, head_vec);
-        count++;
-    }
-
-    print_centers(centers);
-    delete_points_list(head_vec);
-    delete_centers_list(centers);
-    return 0;
 }
