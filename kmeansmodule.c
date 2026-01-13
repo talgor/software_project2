@@ -61,8 +61,7 @@ struct cord* create_cord_list_from_py(PyObject *py_list) {
         }
         new_cord->value = val;
         new_cord->next = NULL;
-
-        if (head == NULL) {
+      if (head == NULL) {
             head = new_cord;
             curr = head;
         } else {
@@ -71,6 +70,33 @@ struct cord* create_cord_list_from_py(PyObject *py_list) {
         }
     }
     return head;
+}
+
+static PyObject* fit(PyObject *self, PyObject *args)
+{
+    /*gets iter, eps, list of datapoints and list of centroides*/
+    int iter, K;
+    double eps;
+    struct vector *head_vec;
+    struct center *centers;
+    PyObject *datapoints;
+    PyObject *initial_centers;
+    PyObject *final_centers;
+    /* something to get the datapoints and the centroides*/
+    /*change the following line to parse the types*/
+    if(!PyArg_ParseTuple(args, "iidOO", &iter, &K, &eps, &datapoints, &initial_centers)) {
+        return NULL; /* In the CPython API, a NULL value is never valid for a
+                        PyObject* so it is used to signal that an error has occurred. */
+    }
+/* change to return a list of centers - different typr, different value*/
+/* This builds the answer ("d" = Convert a C double to a Python floating point number) back into a python object */
+    head_vec = py_list_to_vector(datapoints);
+    centers = py_list_to_center(initial_centers);
+    updated_centers = fit_c(iter, eps, head_vec, centers);
+    final_centers = build_py_centers(updated_centers, K, cords);
+    delete_points_list(head_vec);
+    delete_centers_list(centers);
+    return final_centers;
 }
 
 struct cord* create_zero_cord_list() {
@@ -221,8 +247,8 @@ void kmeans(int iter, double eps, struct vector head_vec, struct center centers)
 }
 
 static PyMethodDef kmeansMethods[] = {
-    {"kmeans",                   /* the Python method name that will be used */
-      (PyCFunction) kmeans, /* the C-function that implements the Python function and returns static PyObject*  */
+    {"fit",                   /* the Python method name that will be used */
+      (PyCFunction) fit, /* the C-function that implements the Python function and returns static PyObject*  */
       METH_VARARGS,           /* flags indicating parameters
 accepted for this function */
 /*probably need to change that one - i get more arguments */
@@ -233,13 +259,59 @@ accepted for this function */
                                  of the functions for the module have been defined. */
 };
 
-static struct PyModuleDef kmeansmodule = {
+static struct PyModuleDef mykmeanssp = {
     PyModuleDef_HEAD_INIT,
-    "kmeans_capi", /* name of module */
+    "mykmeanssp", /* name of module */
     NULL, /* module documentation, may be NULL */
     -1,  /* size of per-interpreter state of the module, or -1 if the module keeps state in global variables. */
     kmeansMethods /* the PyMethodDef array from before containing the methods of the extension */
 };
+
+static PyObject* build_py_centers(struct center *c_centers, int K)
+{
+    PyObject *p_centers;
+    PyObject *curr_center;
+    PyObject *python_double;
+    struct cord *curr_cord;
+    int i, j;
+    p_centers = PyList_New(K);
+    for (i = 0, i < K, ++i)
+    {
+        curr_center = PyList_New(DIM);
+        curr_cord = c_centers->cords;
+        for (j = 0, j < DIM, ++j)
+        {
+            python_double = Py_BuildValue("d", curr_cord->value);
+            PyList_SetItem(curr_center, j, python_double);
+            curr_cord = curr_cord->next;
+        }
+        PyList_SetItem(p_centers, i, curr_center);
+        c_centers = c_centers->next;
+    }
+    return p_centers;
+}
+
+
+struct center *fit_c(int iter, double eps, struct vector *head_vec, struct center *centers)
+{
+    int count, changed;
+
+    /* Store global pointers for cleanup if needed: */
+    global_vec_ptr = head_vec;
+    global_cent_ptr = centers;
+
+    count = 0;
+    changed = 1;
+
+    while (changed && (count < iter))
+    {
+        update_all_points(head_vec, centers);
+        changed = update_all_centers(centers, head_vec, eps);
+        count++;
+    }
+
+    return centers;
+}
 
 void delete_point(struct cord *curr)
 {
@@ -407,10 +479,9 @@ void delete_point_from_its_center(struct center *centers, struct vector *point)
     }
 }
 
-int update_all_centers(struct center *centers, struct vector *first_point)
+int update_all_centers(struct center *centers, struct vector *first_point, double eps)
 {
     int moved = 0;
-    double eps = 0.001;
     struct center *curr_cent = centers;
     struct cord *tmp;
 
