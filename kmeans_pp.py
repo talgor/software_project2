@@ -1,4 +1,4 @@
-import sys, math, pandas as pd, numpy as np, kmeans_capi as c_kmeans
+import sys, math, pandas as pd, numpy as np, mykmeanssp as c_kmeans
 
 global K, iters, points, eps
 K = None
@@ -85,9 +85,10 @@ def main():
         print("Incorrect epsilon!")
         sys.exit(1)
 
-    if len(sys.argv) == 5:
+    if len(args) == 5:
         try:
             iters = int(iters)
+            print(type(iters))
             if (iters < 2) or (iters > 799):
                 print("Incorrect maximum iteration!")
                 sys.exit(1)

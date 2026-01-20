@@ -63,14 +63,10 @@ static PyObject* fit(PyObject *self, PyObject *args)
     PyObject *datapoints;
     PyObject *initial_centers;
     PyObject *final_centers;
-    /* something to get the datapoints and the centroides*/
-    /*change the following line to parse the types*/
     if(!PyArg_ParseTuple(args, "iidOO", &iter, &K, &eps, &datapoints, &initial_centers)) {
         return NULL; /* In the CPython API, a NULL value is never valid for a
                         PyObject* so it is used to signal that an error has occurred. */
     }
-/* change to return a list of centers - different typr, different value*/
-/* This builds the answer ("d" = Convert a C double to a Python floating point number) back into a python object */
     head_vec = py_list_to_vector(datapoints);
     centers = py_list_to_center(initial_centers);
     updated_centers = fit_c(iter, eps, head_vec, centers);
@@ -85,7 +81,6 @@ static PyMethodDef kmeansMethods[] = {
     {"fit",                 /* the Python method name that will be used */
       (PyCFunction) fit,    /* the C-function that implements the Python function and returns static PyObject*  */
       METH_VARARGS,         /* flags indicating parameters accepted for this function */
-    /*probably need to change that one - i get more arguments */
 
       PyDoc_STR("calculates centroides from a list of datapoints and a list of init_centroides using kmeans")}, 
       /*  The docstring for the function */
