@@ -107,13 +107,11 @@ def main():
 
     #havent run that to check if works. is the c capable of parsing numpy objects?
     updated_centers = c_kmeans.fit(iters, eps, matrix.tolist(), centers.tolist())
-    print(updated_centers)
-
-    #kmeans logic in c
+    # print(updated_centers)
         
-    # for center in final_centers:
-    #     formatted_coords = (f"{c:.4f}" for c in center.coords)
-    #     print(*formatted_coords, sep=",")
+    for center in updated_centers:
+        formatted_cords = (f"{c:.4f}" for c in center)
+        print(*formatted_cords, sep=",")
 
 
 if __name__ == "__main__":
