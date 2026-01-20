@@ -84,7 +84,6 @@ static PyMethodDef kmeansMethods[] = {
     {"fit",                 /* the Python method name that will be used */
       (PyCFunction) fit,    /* the C-function that implements the Python function and returns static PyObject*  */
       METH_VARARGS,         /* flags indicating parameters accepted for this function */
-    /*probably need to change that one - i get more arguments */
 
       PyDoc_STR("calculates centroides from a list of datapoints and a list of init_centroides using kmeans")}, 
       /*  The docstring for the function */
