@@ -88,7 +88,6 @@ def main():
     if len(args) == 5:
         try:
             iters = int(iters)
-            print(type(iters))
             if (iters < 2) or (iters > 799):
                 print("Incorrect maximum iteration!")
                 sys.exit(1)
@@ -98,7 +97,7 @@ def main():
 
     matrix, indices = parse_files(file_name_1, file_name_2)
 
-    if K > len(matrix):
+    if K >= len(matrix):
         print("Incorrect number of clusters!")
         sys.exit(1)
 
@@ -113,9 +112,9 @@ def main():
 
 
 if __name__ == "__main__":
-    # try:
+    try:
         main()
-    # except Exception:
-    #     print("An Error Has Occured")
-    #     sys.exit(1)
+    except Exception:
+        print("An Error Has Occurred")
+        sys.exit(1)
 
