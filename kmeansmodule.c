@@ -63,14 +63,13 @@ static PyObject* fit(PyObject *self, PyObject *args)
     PyObject *datapoints;
     PyObject *initial_centers;
     PyObject *final_centers;
-    /* something to get the datapoints and the centroides*/
-    /*change the following line to parse the types*/
-    if(!PyArg_ParseTuple(args, "iidOO", &iter, &K, &eps, &datapoints, &initial_centers)) {
-        return NULL; /* In the CPython API, a NULL value is never valid for a
-                        PyObject* so it is used to signal that an error has occurred. */
+
+    if(!PyArg_ParseTuple(args, "idOO", &iter, &eps, &datapoints, &initial_centers)) {
+        return NULL;
     }
-/* change to return a list of centers - different typr, different value*/
-/* This builds the answer ("d" = Convert a C double to a Python floating point number) back into a python object */
+    
+    K = (int)PyList_Size(initial_centers);
+    
     head_vec = py_list_to_vector(datapoints);
     centers = py_list_to_center(initial_centers);
     updated_centers = fit_c(iter, eps, head_vec, centers);
