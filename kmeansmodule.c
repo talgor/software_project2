@@ -69,9 +69,9 @@ static PyObject* fit(PyObject *self, PyObject *args)
     }
     
     K = (int)PyList_Size(initial_centers);
-    
-    head_vec = py_list_to_vector(datapoints);
+
     centers = py_list_to_center(initial_centers);
+    head_vec = py_list_to_vector(datapoints);
     updated_centers = fit_c(iter, eps, head_vec, centers);
     final_centers = build_py_centers(updated_centers, K);
     delete_points_list(head_vec);
