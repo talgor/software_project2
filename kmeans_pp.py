@@ -53,15 +53,15 @@ def main():
     if len(args) == 5:
         K = args[0]
         iters = args[1]
-        file_name_1 = args[2]
-        file_name_2 = args[3]
-        eps = args[4]
+        eps = args[2]
+        file_name_1 = args[3]
+        file_name_2 = args[4]
 
     elif len(args) == 4:
         K = args[0]
-        file_name_1 = args[1]
-        file_name_2 = args[2]
-        eps = args[3]
+        eps = args[1]
+        file_name_1 = args[2]
+        file_name_2 = args[3]
     
     else:
         print("An Error Has Occurred")
@@ -103,11 +103,9 @@ def main():
         sys.exit(1)
 
     centers, center_indices = kmeans_pp_init(matrix, indices, K)
-    print(center_indices)
+    print(",".join(map(str, center_indices.astype(int))))
 
-    #havent run that to check if works. is the c capable of parsing numpy objects?
     updated_centers = c_kmeans.fit(iters, eps, matrix.tolist(), centers.tolist())
-    # print(updated_centers)
         
     for center in updated_centers:
         formatted_cords = (f"{c:.4f}" for c in center)
