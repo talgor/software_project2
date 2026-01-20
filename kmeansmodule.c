@@ -63,10 +63,13 @@ static PyObject* fit(PyObject *self, PyObject *args)
     PyObject *datapoints;
     PyObject *initial_centers;
     PyObject *final_centers;
-    if(!PyArg_ParseTuple(args, "iidOO", &iter, &K, &eps, &datapoints, &initial_centers)) {
-        return NULL; /* In the CPython API, a NULL value is never valid for a
-                        PyObject* so it is used to signal that an error has occurred. */
+
+    if(!PyArg_ParseTuple(args, "idOO", &iter, &eps, &datapoints, &initial_centers)) {
+        return NULL;
     }
+    
+    K = (int)PyList_Size(initial_centers);
+    
     head_vec = py_list_to_vector(datapoints);
     centers = py_list_to_center(initial_centers);
     updated_centers = fit_c(iter, eps, head_vec, centers);
